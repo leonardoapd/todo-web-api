@@ -1,0 +1,45 @@
+# .NET Core / .NET 7
+######################
+# Build output
+bin/
+obj/
+
+# .NET Core / .NET 7.x
+*.dll
+*.exe
+*.pdb
+*.dll.config
+*.exe.config
+
+# Visual Studio / Rider
+#######################
+.vs/
+/.vscode
+*.userprefs
+*.sln.docstates
+
+# Test Results
+##############
+TestResults/
+[Bb]uild/
+
+# NuGet Packages
+################
+*.nuget.props
+*.nuget.targets
+project.lock.json
+npm-debug.log
+node_modules/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+
+# Rider
+#######
+.idea/
+
+# Others
+########
+*.cache
+*.log
