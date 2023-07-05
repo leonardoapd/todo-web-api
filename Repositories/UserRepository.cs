@@ -15,6 +15,8 @@ namespace ToDoBackend.Repositories
         private readonly IMongoCollection<User> _usersCollection;
         private readonly FilterDefinitionBuilder<User> filterBuilder = Builders<User>.Filter;
 
+        
+
         public UserRepository(IMongoClient mongoClient)
         {
             IMongoDatabase? db = mongoClient.GetDatabase(databaseName);
@@ -23,36 +25,88 @@ namespace ToDoBackend.Repositories
 
         public async Task CreateUserAsync(User user)
         {
-            await _usersCollection.InsertOneAsync(user);
+            // Hash the password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+
+            try
+            {
+                await _usersCollection.InsertOneAsync(user);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
 
-        public Task DeleteUserAsync(int id)
+        public Task DeleteUserAsync(Guid id)
         {
-            var filter = filterBuilder.Eq(existingUser => existingUser.Id, id);
-            return _usersCollection.DeleteOneAsync(filter);
+            try
+            {
+                var filter = filterBuilder.Eq(existingUser => existingUser.Id, id);
+                return _usersCollection.DeleteOneAsync(filter);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
-            return await _usersCollection.Find(new BsonDocument()).ToListAsync();
+            try
+            {
+                return await _usersCollection.Find(new BsonDocument()).ToListAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public Task<User> GetUserByEmailAsync(string email)
         {
-            var filter = filterBuilder.Eq(existingUser => existingUser.Email, email);
-            return _usersCollection.Find(filter).SingleOrDefaultAsync();
+            try
+            {
+                var filter = filterBuilder.Eq(existingUser => existingUser.Email, email);
+                return _usersCollection.Find(filter).SingleOrDefaultAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
-        public Task<User> GetUserByIdAsync(int id)
+        public Task<User> GetUserByIdAsync(Guid id)
         {
-            var filter = filterBuilder.Eq(existingUser => existingUser.Id, id);
-            return _usersCollection.Find(filter).SingleOrDefaultAsync();
+            try
+            {
+                var filter = filterBuilder.Eq(existingUser => existingUser.Id, id);
+                return _usersCollection.Find(filter).SingleOrDefaultAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public Task UpdateUserAsync(User user)
         {
-            var filter = filterBuilder.Eq(existingUser => existingUser.Id, user.Id);
-            return _usersCollection.ReplaceOneAsync(filter, user);
+            try
+            {
+                var filter = filterBuilder.Eq(existingUser => existingUser.Id, user.Id);
+                return _usersCollection.ReplaceOneAsync(filter, user);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
+
+
     }
 }
