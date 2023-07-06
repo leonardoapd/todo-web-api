@@ -26,7 +26,7 @@ namespace ToDoBackend.Repositories
         public async Task CreateUserAsync(User user)
         {
             // Hash the password
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
             try
             {

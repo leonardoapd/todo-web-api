@@ -10,9 +10,9 @@ namespace ToDoBackend.Repositories
     {
         Task<IEnumerable<ToDo>> GetAllToDosAsync();
         Task<ToDo> GetToDoByIdAsync(Guid id);
-        Task<ToDo> GetToDoByUserEmailAsync(string userEmail);
+        Task<List<ToDo>> GetAllToDosByUserEmailAsync(string userEmail);
         Task CreateToDoAsync(ToDo toDo);
-        Task UpdateToDoAsync(ToDo toDo);
+        Task UpdateToDoAsync(Guid id, ToDo toDo);
         Task DeleteToDoAsync(Guid id);
         Task CompleteToDoAsync(Guid id, ToDo toDo);
 

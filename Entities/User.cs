@@ -10,9 +10,8 @@ namespace ToDoBackend.Entities
     {
         public Guid Id { get; set; }
         public required string Email { get; set; }
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public required string PasswordHash { get; set; }
+        public string? Name { get; set; }
+        public required string Password { get; set; }
 
         // Navigation properties
         public ICollection<ToDo>? ToDos { get; set; }

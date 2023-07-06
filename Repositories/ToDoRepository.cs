@@ -25,7 +25,8 @@ namespace ToDoBackend.Repositories
         public async Task CompleteToDoAsync(Guid id, ToDo toDo)
         {
             var filter = filterBuilder.Eq(existingToDo => existingToDo.Id, id);
-            await _toDosCollection.ReplaceOneAsync(filter, toDo);
+            var update = Builders<ToDo>.Update.Set(existingToDo => existingToDo.IsCompleted, toDo.IsCompleted);
+            await _toDosCollection.UpdateOneAsync(filter, update);
         }
 
         public async Task CreateToDoAsync(ToDo toDo)
@@ -50,16 +51,19 @@ namespace ToDoBackend.Repositories
             return _toDosCollection.Find(filter).SingleOrDefaultAsync();
         }
 
-        public Task<ToDo> GetToDoByUserEmailAsync(string userEmail)
+        public Task<List<ToDo>> GetAllToDosByUserEmailAsync(string userEmail)
         {
-            var filter = filterBuilder.Eq(existingToDo => existingToDo.userEmail, userEmail);
-            return _toDosCollection.Find(filter).SingleOrDefaultAsync();
+            var filter = filterBuilder.Eq(existingToDo => existingToDo.UserEmail, userEmail);
+            
+            return _toDosCollection.Find(filter).ToListAsync();
         }
 
-        public Task UpdateToDoAsync(ToDo toDo)
+        public Task UpdateToDoAsync(Guid id, ToDo toDo)
         {
-            var filter = filterBuilder.Eq(existingToDo => existingToDo.Id, toDo.Id);
-            return _toDosCollection.ReplaceOneAsync(filter, toDo);
+            var filter = filterBuilder.Eq(existingToDo => existingToDo.Id, id);
+            var update = Builders<ToDo>.Update
+                .Set(existingToDo => existingToDo.Title, toDo.Title);
+            return _toDosCollection.UpdateOneAsync(filter, update);
         }
     }
 }

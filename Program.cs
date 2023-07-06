@@ -38,12 +38,23 @@ var mongoDBSettings = builder.Configuration.GetSection(nameof(MongoDBSettings)).
 // MongoDB
 builder.Services.AddSingleton<IMongoClient, MongoClient>(serviceProvider =>
 {
-    return new MongoClient(mongoDBSettings.ConnectionString);
+    return new MongoClient(mongoDBSettings?.ConnectionString);
 });
 
 // Injections
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IToDoRepository, ToDoRepository>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", builder =>
+    {
+        builder.AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .WithExposedHeaders("Authorization");
+    });
+});
 
 var app = builder.Build();
 
@@ -55,6 +66,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

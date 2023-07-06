@@ -8,10 +8,10 @@ namespace ToDoBackend.Entities
     public class ToDo
     {
         public Guid Id { get; set; }
-        public required string Title { get; set; }
+        public string? Title { get; set; }
         public bool IsCompleted { get; set; }
 
         // Navigation properties
-        public string? userEmail { get; set; }
+        public string? UserEmail { get; set; }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ToDoBackend.Entities;
@@ -44,7 +45,7 @@ namespace ToDoBackend.Controllers
             }
 
             // Check if the password is correct
-            if (!BCrypt.Net.BCrypt.Verify(user.PasswordHash, existingUser.PasswordHash))
+            if (!BCrypt.Net.BCrypt.Verify(user.Password, existingUser.Password))
             {
                 return BadRequest("Invalid password");
             }
@@ -52,7 +53,9 @@ namespace ToDoBackend.Controllers
             // If the user exists and the password is correct, return a token
             var token = new TokenService().GenerateToken(existingUser.Email);
 
-            return Ok(new { token });
+            Response.Headers.Append("Authorization", $"Bearer {token}");
+
+            return Ok();
         }
 
         [Authorize]
@@ -62,6 +65,10 @@ namespace ToDoBackend.Controllers
             return await _usersRepository.GetAllUsersAsync();
         }
 
-
+        [HttpGet("logout")]
+        public IActionResult Logout()
+        {
+            return Ok("Logged out successfully");
+        }
     }
 }
