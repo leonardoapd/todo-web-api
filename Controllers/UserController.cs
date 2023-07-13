@@ -38,7 +38,7 @@ namespace ToDoBackend.Controllers
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] User user)
         {
-            var existingUser = await _usersRepository.GetUserByEmailAsync(user.Email);
+            User existingUser = await _usersRepository.GetUserByEmailAsync(user.Email);
             if (existingUser == null)
             {
                 return BadRequest("User with this email does not exist");
@@ -55,20 +55,28 @@ namespace ToDoBackend.Controllers
 
             Response.Headers.Append("Authorization", $"Bearer {token}");
 
-            return Ok();
+            return Ok(new { existingUser.Email, existingUser.Name });
         }
 
-        [Authorize]
-        [HttpGet]
-        public async Task<IEnumerable<User>> GetAllUsers()
-        {
-            return await _usersRepository.GetAllUsersAsync();
-        }
+        // [Authorize]
+        // [HttpGet]
+        // public async Task<IEnumerable<User>> GetAllUsers()
+        // {
+        //     return await _usersRepository.GetAllUsersAsync();
+        // }
 
         [HttpGet("logout")]
         public IActionResult Logout()
         {
             return Ok("Logged out successfully");
+        }
+
+        [Authorize]
+        [HttpGet("me/{email}")]
+        public async Task<IActionResult> GetCurrentUser(string email)
+        {
+            var user = await _usersRepository.GetUserByEmailAsync(email);
+            return Ok(new { user.Email, user.Name });
         }
     }
 }
