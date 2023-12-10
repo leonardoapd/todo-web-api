@@ -133,5 +133,35 @@ namespace ToDoBackend.Controllers
             await _usersRepository.UpdateUserAsync(user);
             return Ok();
         }
+
+        [Authorize]
+        [HttpPatch("me/photo")]
+        public async Task<IActionResult> UpdateCurrentUserPhoto([FromBody] UserPhotoDTO userPhotoDTO)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Invalid token");
+            }
+
+            var email = _tokenService.GetEmailFromToken(token);
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Invalid token or user not found");
+            }
+
+            var user = await _usersRepository.GetUserByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            user.Photo = userPhotoDTO.Photo;
+            await _usersRepository.UpdateUserAsync(user);
+            return Ok();
+        }
     }
 }
