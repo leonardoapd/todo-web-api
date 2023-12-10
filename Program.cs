@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using ToDoBackend.Repositories;
+using ToDoBackend.Services;
 using ToDoBackend.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,14 +18,21 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    // Getting the secretkey from the appsettings.json
+    var tokenSettings = builder.Configuration.GetSection("TokenSettings");
+    var secretKey = tokenSettings["Secret"];
+
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("ToDoBackendSecretKey@324")),
-        ValidateIssuer = false,
-        ValidateAudience = false
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey!)),
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidIssuer = "https://localhost:7059",
+        ValidAudience = "https://localhost:7059",
+        ClockSkew = TimeSpan.Zero,
     };
 });
 builder.Services.AddAuthorization();
@@ -34,12 +42,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var mongoDBSettings = builder.Configuration.GetSection(nameof(MongoDBSettings)).Get<MongoDBSettings>();
-
+builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 // MongoDB
 builder.Services.AddSingleton<IMongoClient, MongoClient>(serviceProvider =>
 {
     return new MongoClient(mongoDBSettings?.ConnectionString);
 });
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 // Injections
 builder.Services.AddScoped<IUserRepository, UserRepository>();

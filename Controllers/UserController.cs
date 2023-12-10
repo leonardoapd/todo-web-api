@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ToDoBackend.DTOs.UserDTOs;
 using ToDoBackend.Entities;
 using ToDoBackend.Repositories;
 using ToDoBackend.Services;
@@ -16,20 +17,30 @@ namespace ToDoBackend.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _usersRepository;
+        private readonly ITokenService _tokenService;
 
-        public UserController(IUserRepository usersRepository)
+        public UserController(IUserRepository usersRepository, ITokenService tokenService)
         {
             _usersRepository = usersRepository;
+            _tokenService = tokenService;
         }
 
-        [HttpPost("signup")]
-        public async Task<IActionResult> SignUp([FromBody] User user)
+       [HttpPost("signup")]
+        public async Task<IActionResult> SignUp([FromBody] UserSignUpDTO userDto)
         {
-            var existingUser = await _usersRepository.GetUserByEmailAsync(user.Email);
+            var existingUser = await _usersRepository.GetUserByEmailAsync(userDto.Email);
+
             if (existingUser != null)
             {
-                return BadRequest("User with this email already exists");
+                return Conflict("User with this email already exists");
             }
+
+            var user = new User
+            {
+                Email = userDto.Email,
+                Password = userDto.Password,
+                Name = userDto.Name
+            };
 
             await _usersRepository.CreateUserAsync(user);
             return Ok();
@@ -41,7 +52,7 @@ namespace ToDoBackend.Controllers
             User existingUser = await _usersRepository.GetUserByEmailAsync(user.Email);
             if (existingUser == null)
             {
-                return BadRequest("User with this email does not exist");
+                return NotFound("User with this email does not exist");
             }
 
             // Check if the password is correct
@@ -51,19 +62,12 @@ namespace ToDoBackend.Controllers
             }
 
             // If the user exists and the password is correct, return a token
-            var token = new TokenService().GenerateToken(existingUser.Email);
+            var token = _tokenService.GenerateToken(existingUser.Email);
 
             Response.Headers.Append("Authorization", $"Bearer {token}");
 
             return Ok(new { existingUser.Email, existingUser.Name });
         }
-
-        // [Authorize]
-        // [HttpGet]
-        // public async Task<IEnumerable<User>> GetAllUsers()
-        // {
-        //     return await _usersRepository.GetAllUsersAsync();
-        // }
 
         [HttpGet("logout")]
         public IActionResult Logout()
@@ -72,11 +76,92 @@ namespace ToDoBackend.Controllers
         }
 
         [Authorize]
-        [HttpGet("me/{email}")]
-        public async Task<IActionResult> GetCurrentUser(string email)
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
         {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Invalid token");
+            }
+
+            // Obtiene el email del usuario desde el token JWT utilizando el método GetEmailFromToken de ITokenService
+            var email = _tokenService.GetEmailFromToken(token);
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Invalid token or user not found");
+            }
+
             var user = await _usersRepository.GetUserByEmailAsync(email);
-            return Ok(new { user.Email, user.Name });
+
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            var userResponse = new UserResponseDTO
+            {
+                Email = user.Email,
+                Name = user.Name,
+                Photo = user.Photo,
+                Bio = user.Bio,
+                Phone = user.Phone
+            };
+
+            return Ok(userResponse);
+        }
+
+        [Authorize]
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateCurrentUser([FromBody] User user)
+        {
+            var existingUser = await _usersRepository.GetUserByEmailAsync(user.Email);
+            if (existingUser == null)
+            {
+                return NotFound("User with this email does not exist");
+            }
+
+            if (existingUser.Password is not null && !BCrypt.Net.BCrypt.Verify(user.Password, existingUser.Password))
+            {
+                return BadRequest("Invalid password");
+            }
+
+            user.Password = user.Password is not null ? BCrypt.Net.BCrypt.HashPassword(user.Password) : null;
+            user.Id = existingUser.Id;
+            await _usersRepository.UpdateUserAsync(user);
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpPatch("me/photo")]
+        public async Task<IActionResult> UpdateCurrentUserPhoto([FromBody] UserPhotoDTO userPhotoDTO)
+        {
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Invalid token");
+            }
+
+            var email = _tokenService.GetEmailFromToken(token);
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Invalid token or user not found");
+            }
+
+            var user = await _usersRepository.GetUserByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            user.Photo = userPhotoDTO.Photo;
+            await _usersRepository.UpdateUserAsync(user);
+            return Ok();
         }
     }
 }

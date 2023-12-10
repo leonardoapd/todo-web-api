@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using ToDoBackend.DTOs.TodoDTOs;
 using ToDoBackend.Entities;
 using ToDoBackend.Repositories;
+using ToDoBackend.Services;
 
 namespace ToDoBackend.Controllers
 {
@@ -17,10 +19,12 @@ namespace ToDoBackend.Controllers
     public class TodoController : ControllerBase
     {
         private readonly IToDoRepository _todoRepository;
+        private readonly ITokenService _tokenService;
 
-        public TodoController(IToDoRepository todoRepository)
+        public TodoController(IToDoRepository todoRepository, ITokenService tokenService)
         {
             _todoRepository = todoRepository;
+            _tokenService = tokenService;
         }
 
         [HttpGet]
@@ -37,11 +41,18 @@ namespace ToDoBackend.Controllers
             }
         }
 
-        [HttpGet("{userEmail}")]
-        public async Task<IActionResult> GetAllToDosByUserEmail(string userEmail)
+        [HttpPost("user")]
+        public async Task<IActionResult> GetAllToDosByUserEmail(GetTodosDTO getTodosDTO)
         {
+            string userEmail = getTodosDTO.Email;
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last()!;
+
             try
             {
+                if(!_tokenService.ValidateEmailFromToken(token, userEmail))
+                {
+                    return Unauthorized();
+                }
                 var todos = await _todoRepository.GetAllToDosByUserEmailAsync(userEmail);
                 if (todos == null)
                 {
